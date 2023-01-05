@@ -2,13 +2,16 @@ from abc import ABC, abstractmethod
 from typing import Union, Tuple, Optional
 from numpy import ndarray, pi, cos, radians, sin, full_like
 
-from utils import create_2D_grid
+from .utils import create_2D_grid
 
 
 class Elementary2DSolution(ABC):
     """
     All elementary solutions can be defined from this base class
     """
+
+    TYPE = "elemental"
+
     def __init__(self, location: Tuple[Union[int, float], Union[int, float]], strength: Union[int, float]):
         """
         All elementary solutions are determined by its location and strength, hence, those parameters are required.
@@ -25,6 +28,10 @@ class Elementary2DSolution(ABC):
 
 
 class SourceSink(Elementary2DSolution):
+    def __init__(self):
+        super().__init__()
+        self.name = "source" if self.strength > 0 else "sink"
+
     def compute_flow_field(self, grid: Tuple[ndarray, ndarray]) -> Tuple[ndarray, ndarray]:
         """
         Computes the flow velocity in both directions (X and Y) on the points given by the grid argument. If the
@@ -40,12 +47,16 @@ class SourceSink(Elementary2DSolution):
         """
         X, Y = grid
         u_flow = self.strength / (2 * pi) * (X - self.x_orig) / ((X - self.x_orig)**2 + (Y - self.y_orig)**2)
-        v_flow = self.strength / (2 * pi) * (X - self.y_orig) / ((X - self.x_orig)**2 + (Y - self.y_orig)**2)
+        v_flow = self.strength / (2 * pi) * (Y - self.y_orig) / ((X - self.x_orig)**2 + (Y - self.y_orig)**2)
         flow_velocity = [u_flow, v_flow]
         return flow_velocity
 
 
 class Doublet2D(Elementary2DSolution):
+    def __init__(self):
+        super().__init__()
+        self.name = "doublet"
+
     def compute_flow_field(self, grid: Tuple[ndarray, ndarray]) -> Tuple[ndarray, ndarray]:
         """
         Computes the flow velocity in both directions (X and Y) on the points given by the grid argument. If the
@@ -61,13 +72,18 @@ class Doublet2D(Elementary2DSolution):
         """
         X, Y = grid
         u_flow = -self.strength / (2 * pi) * (
-                (X - x_orig)**2 - (Y - y_orig)**2) / ((X - x_orig)**2 + (Y - y_orig)**2)**2
-        v_flow = -self.strength / (2 * pi) * 2 * (X - x_orig) * (Y - y_orig) / ((X - x_orig)**2 + (Y - y_orig)**2)**2
+                (X - self.x_orig)**2 - (Y - self.y_orig)**2) / ((X - self.x_orig)**2 + (Y - self.y_orig)**2)**2
+        v_flow = -self.strength / (2 * pi) * 2 * (
+                X - self.x_orig) * (Y - self.y_orig) / ((X - self.x_orig)**2 + (Y - self.y_orig)**2)**2
         flow_velocity = [u_flow, v_flow]
         return flow_velocity
 
 
 class Vortex2D(Elementary2DSolution):
+    def __init__(self):
+        super().__init__()
+        self.name = "vortex"
+
     def compute_flow_field(self, grid: Tuple[ndarray, ndarray]) -> Tuple[ndarray, ndarray]:
         """
         Computes the flow velocity in both directions (X and Y) on the points given by the grid argument. If the
@@ -82,13 +98,19 @@ class Vortex2D(Elementary2DSolution):
             nodes.
         """
         X, Y = grid
-        u_flow = -self.strength / (2 * pi) * (Y - y_orig) / ((X - x_orig)**2 + (Y - y_orig)**2)
-        v_flow = -self.strength / (2 * pi) * (X - x_orig) / ((X - x_orig)**2 + (Y - y_orig)**2)
+        u_flow = self.strength / (2 * pi) * (Y - self.y_orig) / ((X - self.x_orig)**2 + (Y - self.y_orig)**2)
+        v_flow = -self.strength / (2 * pi) * (X - self.x_orig) / ((X - self.x_orig)**2 + (Y - self.y_orig)**2)
         flow_velocity = [u_flow, v_flow]
         return flow_velocity
 
 
 class Freestream2D:
+    """
+    Freestream flow object
+    """
+
+    TYPE = "freestream"
+
     def __init__(self, flow_velocity: Union[float, int], angle_of_incidence: Optional[int] = 0):
         """
         Set up the main parameters of the freestream based on its intensity (velocity) and angle of incidence.
@@ -97,6 +119,7 @@ class Freestream2D:
             flow_velocity: Intensity of the flow.
             angle_of_incidence: Angle of the flow, in degrees.
         """
+        self.name = self.TYPE
         self.flow_velocity = flow_velocity
         self.angle_of_incidence = angle_of_incidence
         self.x_velocity = self.flow_velocity * cos(radians(self.angle_of_incidence))

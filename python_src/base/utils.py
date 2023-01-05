@@ -1,5 +1,5 @@
-from numpy import linspace, meshgrid, ndarray
-from typing import Optional
+from numpy import linspace, meshgrid, ndarray, where, sqrt
+from typing import Optional, Tuple
 
 
 def create_2D_grid(
@@ -27,9 +27,9 @@ def create_2D_grid(
         grid: Numpy array containing the 2D coordinates of the grid nodes. Can be unzipped as X, Y = create_2D_grid()
     """
     if x_orig is None:
-        x_orig = -int(width / 2)
+        x_orig = -width / 2
     if y_orig is None:
-        y_orig = -int(width / 2)
+        y_orig = -height / 2
 
     if not resolution:
         x = linspace(x_orig, x_orig + width, max(width, height))  # creates a 1D-array with the x-coordinates
@@ -41,3 +41,20 @@ def create_2D_grid(
     grid = meshgrid(x, y)
 
     return grid
+
+
+def stagnation_points(flowfield: Tuple[ndarray, ndarray], tolerance: float = 1e-6) -> List[Tuple[ndarray, ndarray]]:
+    """
+    Search for stagnation points across the given flowfield defined as nodes where velocity modulues is below a
+    certain threshold value.
+
+    Args:
+        flowfield: list containing the flow velocity in X and Y respectively as Numpy arrays.
+        tolerance: max value of the velocity to be considered a stagnation point.
+
+    Returns:
+        stag_indices: list containing the X and Y indices, respectively, of every stagnation pont found.
+    """
+    mod_velocity = sqrt(flowfield[0]**2 + flowfield[1]**2)
+    stag_indices = where(mod_velocity < tolerance)
+    return stag_indices
